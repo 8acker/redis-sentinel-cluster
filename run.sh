@@ -8,14 +8,9 @@ function writeSentinelConfig() {
     sentinel_conf=/redis-sentinel-data/${master}_sentinel.conf
     echo "sentinel monitor mymaster ${master} 6379 2" > ${sentinel_conf}
     echo "sentinel down-after-milliseconds mymaster 60000" >> ${sentinel_conf}
-    echo "sentinel failover-timeout mymaster 180000" >> ${sentinel_conf}
+    echo "sentinel failover-timeout mymaster 120000" >> ${sentinel_conf}
     echo "sentinel parallel-syncs mymaster 1" >> ${sentinel_conf}
-}
-
-function addSlaveOf() {
-    master=$1
-    sentinel_conf=/redis-sentinel-data/${master}_sentinel.conf
-    echo "slaveof ${master} 6379" >> ${sentinel_conf}
+    echo "sentinel auth-pass mymaster 1234abcd" >> ${sentinel_conf}
 }
 
 function launchmaster() {
@@ -23,9 +18,9 @@ function launchmaster() {
     echo "Redis master data doesn't exist, data won't be persistent!"
     mkdir /redis-master-data
   fi
+  redis-server /redis-master/redis.conf
   master=$(hostname -i)
   writeSentinelConfig ${master}
-  redis-server /redis-master/redis.conf
   redis-sentinel /redis-sentinel-data/${master}_sentinel.conf
   echo "Master started" >> /redis-master-data/log
 }
@@ -47,11 +42,11 @@ function launchsentinel() {
     echo "Connecting to master failed.  Waiting..."
     sleep 10
   done
-
+  sed -i "s/master-ip/${master}/g" /redis-slave/redis.conf
+  redis-server /redis-slave/redis.conf
   writeSentinelConfig ${master}
-  addSlaveOf ${master}
+  echo "slaveof ${master} 6379" >> ${sentinel_conf}
   redis-sentinel ${sentinel_conf}
-  echo "${master} Sentinel started" >> /redis-sentinel-data/log
 }
 
 if [[ "${SLAVE}" == "true" ]]; then
