@@ -13,3 +13,9 @@ docker run -p 6379:6379 -p 26379:26379 --name redis-master redis-cluster
 ```bash
 docker run -e SLAVE=true -e SENTINEL_MASTER_HOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' redis-master) -p 26378:26379 --name redis-slave-1 redis-cluster
 ```
+
+## Start clusters
+Will start one master and #number slaves
+```bash
+./startClusters.sh number
+```
